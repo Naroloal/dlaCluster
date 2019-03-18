@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 
 
 
-radiusArray=numpy.arange(10,80,5)
+radiusArray=numpy.arange(30,60,5)
 mass=[]
 
 for i in radiusArray:

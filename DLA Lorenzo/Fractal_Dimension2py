@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Dec 18 12:57:08 2018
+
+@author: lorenzo
+"""
+
+import pickle
+import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
+from scipy.optimize import curve_fit
+import pandas as pd
+
+R = 75
+Tamanio = R*2 + 5
+file = open('Matrix.pickle','rb')
+Matrix = pickle.load(file)
+
+Corr = {}
+Count = {}
+for i in range(Tamanio):
+    for j in range(Tamanio):
+        if Matrix[i,j] != 2:
+            dist = np.abs(i - Tamanio//2) + abs(j-Tamanio//2)
+            Corr[dist] = Corr.get(dist,0) + Matrix[i,j]
+New_Corr = {}
+for i in Corr.keys():
+    if i != 0:
+        New_Corr[i] = 1/(4*i)*Corr[i]
+    else: New_Corr[i] = 1
+
+X = Corr.keys()
+Y = New_Corr.values()
+
+data = pd.DataFrame({'Dist' : list(X),'Corr':list(Y)})
+data = data[::-1]
+#
+data['Corr'] = data['Corr']
+#
+data['log2Dist'] = np.log2(data['Dist'])
+data['log2Corr'] = np.log2(data['Corr'])
+
+def f(x,a = 0,b = 0):
+    return a + b*x
+
+def g(x,a = 0,b = 0,c = 0):
+    return a + c*x**b
+
+data.reset_index(inplace=True,drop=True)
+data_to_drop = np.where(np.abs(data['log2Corr']) == np.inf)
+data = data.drop(data_to_drop[0])
+data.reset_index(inplace=True,drop=True)    
+data_to_drop = np.where(np.abs(data['log2Dist']) == np.inf)
+data = data.drop(data_to_drop[0])
+
+
+
+s = np.where(data['log2Dist'] < 4.)
+X = data['log2Dist'][s[0][0]:s[0][-1]]
+Y = data['log2Corr'][s[0][0]:s[0][-1]]
+
+params, cov = curve_fit(f,X,Y)
+err = np.sqrt(sum(np.diag(cov)**2))
+
+t  = np.array([0,1,2,3,4])
+plt.figure(1)
+plt.scatter(X,Y)
+plt.plot(t,f(t,*params))
+plt.text(1,-1,'A = {}'.format(params[1]))
+
+fig = plt.subplot()
+plt.scatter(X,Y, color='blue', edgecolors='blue', s=30)
+plt.plot(t,f(t,*params),color='green', lw=3)
+plt.title("Log-log , Correlacion vs radio",fontsize=20)
+plt.xlabel("Log2 radio",fontsize=15)
+plt.ylabel("Log2 Correlacion",fontsize=15)
+plt.grid(True)
+fig.text(2.6,4.3,'Dimension Fractal:'+num)
+fig.spines["top"].set_visible(False)  
+fig.spines["right"].set_visible(False)  
+plt.savefig('logRadiusMass2.png')
+plt.show()
+
+
+file = open('Fractal.txt','a')
+num_lines = np.sum(1 for line in open('Fractal.txt'))
+file.write(str(num_lines + 1) + ',' + str(params[1])+'\n')
+file.close()
+
+
+
+
+        
+             
+        
+
+    
+    
